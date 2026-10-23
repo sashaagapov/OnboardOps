@@ -42,4 +42,4 @@ def create_onboarding(client_name: str):
     tasks = show_onboarding(client_name)
     for task in tasks:
         save_task(task)
-    return {"client": client_name, "tasks": tasks}
+    return get_tasks(client_name)

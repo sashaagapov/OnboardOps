@@ -1,4 +1,3 @@
-
 import sqlite3
 
 
@@ -11,7 +10,7 @@ def save_task(task):
         VALUES (?, ?, ?)
         ON CONFLICT(client, title) DO NOTHING
         """,
-        (task["client"], task["title"], task["status"])
+        (task["client"], task["title"], task["status"]),
     )
 
     connection.commit()
@@ -22,12 +21,17 @@ def get_tasks(client_name):
     connection = sqlite3.connect("onboardops.db")
 
     rows = connection.execute(
-        "SELECT id, title, status FROM tasks WHERE client = ?",
-        (client_name,)
+        "SELECT id, title, status FROM tasks WHERE client = ?", (client_name,)
     ).fetchall()
 
+    formatted_tasks = []
+
+    for row in rows:
+        task = {"id": row[0], "title": row[1], "status": row[2]}
+        formatted_tasks.append(task)
+
     connection.close()
-    return rows
+    return formatted_tasks
 
 
 def update_status_task(client_name, title, new_status):
@@ -35,7 +39,7 @@ def update_status_task(client_name, title, new_status):
 
     result = connection.execute(
         "UPDATE tasks SET status = ? WHERE client = ? AND title = ?",
-        (new_status, client_name, title)
+        (new_status, client_name, title),
     )
 
     connection.commit()
@@ -43,13 +47,13 @@ def update_status_task(client_name, title, new_status):
 
     return result.rowcount == 1
 
-def delete_task(client_name,title):
+
+def delete_task(client_name, title):
 
     connection = sqlite3.connect("onboardops.db")
 
     result = connection.execute(
-        "DELETE FROM tasks WHERE client = ? AND title = ? ",
-        (client_name, title)
+        "DELETE FROM tasks WHERE client = ? AND title = ? ", (client_name, title)
     )
     connection.commit()
     connection.close()
