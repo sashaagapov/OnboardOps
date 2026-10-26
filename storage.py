@@ -6,11 +6,11 @@ def save_task(task):
 
     connection.execute(
         """
-        INSERT INTO tasks (client, title, status)
-        VALUES (?, ?, ?)
+        INSERT INTO tasks (client, title, status, due_date)
+        VALUES (?, ?, ?,?)
         ON CONFLICT(client, title) DO NOTHING
         """,
-        (task["client"], task["title"], task["status"]),
+        (task["client"], task["title"], task["status"],task.get("due_date"),)
     )
 
     connection.commit()
@@ -21,13 +21,13 @@ def get_tasks(client_name):
     connection = sqlite3.connect("onboardops.db")
 
     rows = connection.execute(
-        "SELECT id, title, status FROM tasks WHERE client = ?", (client_name,)
+        "SELECT id, title, status, due_date FROM tasks WHERE client = ?", (client_name,)
     ).fetchall()
 
     formatted_tasks = []
 
     for row in rows:
-        task = {"id": row[0], "title": row[1], "status": row[2]}
+        task = {"id": row[0], "title": row[1], "status": row[2], "due_date": row[3]}
         formatted_tasks.append(task)
 
     connection.close()

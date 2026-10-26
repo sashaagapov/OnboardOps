@@ -32,7 +32,7 @@ def read_clients():
 
 @app.post("/tasks")
 def create_task(task: TaskCreate):
-    save_task(task.model_dump())
+    save_task(task.model_dump(mode="json"))
     return task
 
 

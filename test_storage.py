@@ -12,7 +12,7 @@ def test_database_initialization_creates_tasks_schema(initialized_database):
         columns = [row[1] for row in connection.execute("PRAGMA table_info(tasks)")]
         indexes = [row[1] for row in connection.execute("PRAGMA index_list(tasks)")]
 
-    assert columns == ["id", "client", "title", "status"]
+    assert columns == ["id", "client", "title", "status", "due_date"]
     assert "idx_tasks_client_title" in indexes
 
 

@@ -6,7 +6,7 @@ def test_get_tasks_returns_client_tasks(api_client):
     assert response.status_code == 200
     assert response.json()["client"] == "Acme"
     assert response.json()["tasks"] == [
-        {"id": 1, "title": "Create account", "status": "pending"}
+        {"id": 1, "title": "Create account", "status": "pending", "due_date": None}
     ]
 
 
@@ -20,6 +20,7 @@ def test_create_task_uses_default_status_and_validates_input(api_client):
         "client": "Acme",
         "title": "Create account",
         "status": "pending",
+        "due_date": None,
     }
     assert api_client.post("/tasks", json={"client": "Acme"}).status_code == 422
 
@@ -152,3 +153,37 @@ def test_get_clients_without_duplicate_names(api_client):
     assert response.json() == {
         "clients": [{"name": "Netflix", "progress_percent": 50.0}]
     }
+
+
+def test_task_deadline_is_saved(api_client):
+    response = api_client.post(
+        "/tasks",
+        json={
+            "client": "Netflix",
+            "title": "Configure integration",
+            "status": "pending",
+            "due_date": "2026-11-05",
+        },
+    )
+    assert response.status_code == 200
+    response = api_client.get("/clients/Netflix/tasks")
+    assert response.status_code == 200
+    task = response.json()["tasks"][0]["due_date"]
+    assert task == "2026-11-05"
+
+
+def test_task_without_deadline(api_client):
+    response = api_client.post(
+        "/tasks",
+        json={
+            "client": "Netflix",
+            "title": "Create account",
+            "status": "pending",
+        },
+    )
+    response = api_client.get("/clients/Netflix/tasks")
+
+    assert response.status_code == 200
+
+    saved_due_date = response.json()["tasks"][0]["due_date"]
+    assert saved_due_date is None
