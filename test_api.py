@@ -11,7 +11,9 @@ def test_get_tasks_returns_client_tasks(api_client):
 
 
 def test_create_task_uses_default_status_and_validates_input(api_client):
-    response = api_client.post("/tasks", json={"client": "Acme", "title": "Create account"})
+    response = api_client.post(
+        "/tasks", json={"client": "Acme", "title": "Create account"}
+    )
 
     assert response.status_code == 200
     assert response.json() == {
@@ -36,7 +38,10 @@ def test_update_task_returns_success_or_not_found(api_client):
     assert updated.json() == {"updated": True}
     assert missing.status_code == 404
     assert missing.json() == {"detail": "Task not found"}
-    assert api_client.patch("/clients/Acme/tasks/Create account", json={}).status_code == 422
+    assert (
+        api_client.patch("/clients/Acme/tasks/Create account", json={}).status_code
+        == 422
+    )
 
 
 def test_delete_task_returns_success_or_not_found(api_client):
@@ -61,11 +66,89 @@ def test_onboarding_endpoint_creates_tasks_and_preserves_completed_status(api_cl
         ("Complete onboarding", "pending"),
     }
 
-    api_client.patch(
-        "/clients/Acme/tasks/Create account", json={"status": "completed"}
-    )
+    api_client.patch("/clients/Acme/tasks/Create account", json={"status": "completed"})
     repeated = api_client.post("/clients/Acme/onboarding")
 
     assert repeated.status_code == 200
     assert len(repeated.json()) == 3
-    assert next(task for task in repeated.json() if task["title"] == "Create account")["status"] == "completed"
+    assert (
+        next(task for task in repeated.json() if task["title"] == "Create account")[
+            "status"
+        ]
+        == "completed"
+    )
+
+
+def test_get_clients_empty(api_client):
+    response = api_client.get("/clients")
+    assert response.status_code == 200
+    assert response.json() == {"clients": []}
+
+
+def test_get_clients_with_one_client(api_client):
+    api_client.post(
+        "/tasks",
+        json={"client": "Netflix", "title": "Create account", "status": "pending"},
+    )
+    response = api_client.get("/clients")
+    assert response.json() == {
+        "clients": [{"name": "Netflix", "progress_percent": 0.0}]
+    }
+
+
+def test_get_clients_with_multiple_clients(api_client):
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Netflix",
+            "title": "Create account",
+            "status": "pending",
+        },
+    )
+
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Google",
+            "title": "Configure integration",
+            "status": "completed",
+        },
+    )
+
+    response = api_client.get("/clients")
+
+    assert response.status_code == 200
+    # Write an assertion checking the complete JSON response.
+    assert response.json() == {
+        "clients": [
+            {"name": "Google", "progress_percent": 100.0},
+            {"name": "Netflix", "progress_percent": 0.0},
+        ]
+    }
+
+
+def test_get_clients_without_duplicate_names(api_client):
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Netflix",
+            "title": "Create account",
+            "status": "completed",
+        },
+    )
+
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Netflix",
+            "title": "Configure integration",
+            "status": "pending",
+        },
+    )
+
+    response = api_client.get("/clients")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "clients": [{"name": "Netflix", "progress_percent": 50.0}]
+    }

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from schemas import TaskCreate, TaskStatusUpdate
-from storage import get_tasks, save_task, update_status_task, delete_task
+from storage import get_tasks, save_task, update_status_task, delete_task, get_clients
 from onboarding import show_onboarding, get_onboarding_progress
 
 app = FastAPI(title="OnboardOps")
@@ -16,6 +16,18 @@ def read_tasks(client_name: str):
 @app.get("/clients/{client_name}/progress")
 def read_onboarding_progress(client_name: str):
     return get_onboarding_progress(client_name)
+
+
+@app.get("/clients")
+def read_clients():
+    names = get_clients()
+    clients = []
+
+    for name in names:
+        progress = get_onboarding_progress(name)
+        clients.append({"name": name, "progress_percent": progress["progress_percent"]})
+
+    return {"clients": clients}
 
 
 @app.post("/tasks")

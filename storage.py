@@ -58,3 +58,14 @@ def delete_task(client_name, title):
     connection.commit()
     connection.close()
     return result.rowcount == 1
+
+def get_clients():
+    connection = sqlite3.connect("onboardops.db")
+
+    rows = connection.execute("SELECT DISTINCT client FROM tasks ORDER BY client").fetchall()
+    clients = []
+    for row in rows:
+        clients.append(row[0])
+
+    connection.close()
+    return clients
