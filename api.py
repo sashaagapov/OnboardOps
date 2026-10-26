@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from schemas import TaskCreate, TaskStatusUpdate
 from storage import get_tasks, save_task, update_status_task, delete_task, get_clients
-from onboarding import show_onboarding, get_onboarding_progress
+from onboarding import show_onboarding, get_onboarding_progress,get_overdue_tasks
 
 app = FastAPI(title="OnboardOps")
 
@@ -28,6 +28,11 @@ def read_clients():
         clients.append({"name": name, "progress_percent": progress["progress_percent"]})
 
     return {"clients": clients}
+
+@app.get("/clients/{client_name}/overdue")
+def read_overdue_tasks(client_name: str):
+    overdue_tasks = get_overdue_tasks(client_name)
+    return overdue_tasks
 
 
 @app.post("/tasks")

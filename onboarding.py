@@ -36,3 +36,21 @@ def show_onboarding(client_name):
         tasks.append(task)
 
     return tasks
+
+
+from datetime import date
+
+
+def get_overdue_tasks(client_name):
+    tasks = get_tasks(client_name)
+    today = date.today()
+    overdue_tasks = []
+
+    for task in tasks:
+        if task["due_date"] is not None:
+            deadline_string = task["due_date"]
+            deadline = date.fromisoformat(deadline_string)
+            if deadline < today and task["status"] != "completed":
+                overdue_tasks.append(task)
+
+    return overdue_tasks

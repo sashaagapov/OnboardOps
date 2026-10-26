@@ -187,3 +187,42 @@ def test_task_without_deadline(api_client):
 
     saved_due_date = response.json()["tasks"][0]["due_date"]
     assert saved_due_date is None
+
+
+def test_pending_task_is_overdue(api_client):
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Netflix",
+            "title": "Review contracts",
+            "status": "pending",
+            "due_date": "2020-01-01",
+        },
+    )
+    request = api_client.get("/clients/Netflix/overdue")
+
+    assert request.status_code == 200
+    assert len(request.json()) == 1
+
+    assert request.json()[0]["due_date"] == "2020-01-01"
+
+    assert request.json()[0]["title"] == "Review contracts"
+
+
+def test_completed_task_is_not_overdue(api_client):
+    created = api_client.post(
+        "/tasks",
+        json={
+            "client": "Netflix",
+            "title": "Review contracts",
+            "status": "completed",
+            "due_date": "2020-01-01",
+        },
+    )
+
+    assert created.status_code == 200
+
+    response = api_client.get("/clients/Netflix/overdue")
+
+    assert response.status_code == 200
+    assert response.json() == []
