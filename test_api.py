@@ -15,7 +15,7 @@ def test_create_task_uses_default_status_and_validates_input(api_client):
         "/tasks", json={"client": "Acme", "title": "Create account"}
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 201
     assert response.json() == {
         "client": "Acme",
         "title": "Create account",
@@ -165,7 +165,7 @@ def test_task_deadline_is_saved(api_client):
             "due_date": "2026-11-05",
         },
     )
-    assert response.status_code == 200
+    assert response.status_code == 201
     response = api_client.get("/clients/Netflix/tasks")
     assert response.status_code == 200
     task = response.json()["tasks"][0]["due_date"]
@@ -220,9 +220,29 @@ def test_completed_task_is_not_overdue(api_client):
         },
     )
 
-    assert created.status_code == 200
+    assert created.status_code == 201
 
     response = api_client.get("/clients/Netflix/overdue")
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_invalid_status_is_rejected(api_client):
+    response = api_client.post(
+        "/tasks",
+        json={"client": "Netflix", "title": "Create account", "status": "banana"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_duplicate_task_returns_409(api_client):
+    task = {"client": "Netflix", "title": "Create account"}
+
+    first = api_client.post("/tasks", json=task)
+    second = api_client.post("/tasks", json=task)
+
+    assert first.status_code == 201
+    assert second.status_code == 409
+    assert second.json()["detail"] == "Task already exists"

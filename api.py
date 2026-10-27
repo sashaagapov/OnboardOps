@@ -1,9 +1,18 @@
 from fastapi import FastAPI, HTTPException
 from schemas import TaskCreate, TaskStatusUpdate
 from storage import get_tasks, save_task, update_status_task, delete_task, get_clients
-from onboarding import show_onboarding, get_onboarding_progress,get_overdue_tasks
+from onboarding import show_onboarding, get_onboarding_progress, get_overdue_tasks
+from contextlib import asynccontextmanager
+from database import init_db
 
-app = FastAPI(title="OnboardOps")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="OnboardOps", lifespan=lifespan)
 
 
 @app.get("/clients/{client_name}/tasks")
@@ -29,15 +38,18 @@ def read_clients():
 
     return {"clients": clients}
 
+
 @app.get("/clients/{client_name}/overdue")
 def read_overdue_tasks(client_name: str):
     overdue_tasks = get_overdue_tasks(client_name)
     return overdue_tasks
 
 
-@app.post("/tasks")
+@app.post("/tasks", status_code=201)
 def create_task(task: TaskCreate):
-    save_task(task.model_dump(mode="json"))
+    created = save_task(task.model_dump(mode="json"))
+    if created is False:
+        raise HTTPException(status_code=409, detail="Task already exists")
     return task
 
 

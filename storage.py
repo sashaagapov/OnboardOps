@@ -4,7 +4,7 @@ import sqlite3
 def save_task(task):
     connection = sqlite3.connect("onboardops.db")
 
-    connection.execute(
+    result = connection.execute(
         """
         INSERT INTO tasks (client, title, status, due_date)
         VALUES (?, ?, ?,?)
@@ -15,6 +15,7 @@ def save_task(task):
 
     connection.commit()
     connection.close()
+    return result.rowcount == 1
 
 
 def get_tasks(client_name):
