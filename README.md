@@ -1,6 +1,6 @@
 # OnboardOps
 
-OnboardOps is a FastAPI backend for managing client onboarding tasks. It stores tasks in SQLite and provides a REST API for task management, onboarding progress, deadlines, overdue work, and a multi-client overview.
+OnboardOps is a client-onboarding task manager. Its FastAPI backend stores tasks in SQLite and provides a REST API for task management, onboarding progress, deadlines, overdue work, and a multi-client overview. A React and TypeScript frontend is available in `frontend/`.
 
 ## Tech stack
 
@@ -8,6 +8,7 @@ OnboardOps is a FastAPI backend for managing client onboarding tasks. It stores 
 - FastAPI and Pydantic
 - SQLite
 - pytest with FastAPI `TestClient`
+- React and TypeScript (frontend)
 
 ## Implemented API
 
@@ -47,6 +48,16 @@ python -m pytest -q
 
 The tests use isolated temporary SQLite databases and do not modify your local database.
 
+## API testing with Postman
+
+The importable collection is at [postman/OnboardOps.postman_collection.json](postman/OnboardOps.postman_collection.json). It contains 20 ordered requests and 42 assertions covering client listing, onboarding, task creation and retrieval, status updates, deletion, validation errors, duplicates, progress, overdue tasks, idempotency, and cleanup.
+
+1. Start the API with `fastapi dev api.py`; the collection defaults to `http://127.0.0.1:8000`.
+2. Import `postman/OnboardOps.postman_collection.json` into Postman.
+3. Run the full collection once in its listed order, starting with request `00` and without a data file.
+
+The collection uses the `baseUrl` variable and creates a unique `PostmanQA_*` client in its first pre-request script. It only uses that synthetic client and the final requests remove its tasks, so repeated full runs are safe against a local development database. Do not point the collection at production or real customer data. Python tests remain separate and can be run with `python -m pytest -q`.
+
 ## Next directions
 
-Planned work includes a React and TypeScript frontend, then evaluation of PostgreSQL, Docker, automation, CI/CD, and deployment.
+Next steps include further frontend development, then evaluation of PostgreSQL, Docker, automation, CI/CD, and deployment.

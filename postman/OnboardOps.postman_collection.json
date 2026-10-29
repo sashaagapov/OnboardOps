@@ -1,0 +1,649 @@
+{
+  "info": {
+    "name": "OnboardOps API Tests — Automated",
+      "description": "Automated integration checks for the OnboardOps FastAPI backend. Runs in order against localhost:8000. The first request creates a unique synthetic QA client; later requests validate client onboarding, task operations, progress, overdue logic, idempotency, duplicate handling, input validation, and 404 responses. The cleanup section removes only tasks belonging to the generated QA client. Never target production or real customer data. Start from request 00 using Collection Runner, with one iteration and no data file.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "qaClient",
+      "value": "POSTMAN_QA_RUN_START_FIRST",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 — Setup and validation",
+      "item": [
+        {
+          "name": "00 — Start isolated QA run / list clients",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clients"
+          },
+          "description": "Generates a unique synthetic client name. This is the only safe entry point for an entire collection run.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const uniqueName = 'PostmanQA_' + Date.now() + '_' + Math.floor(Math.random() * 100000);",
+                  "pm.collectionVariables.set('qaClient', uniqueName);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has clients array\", function () {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d).to.have.property(\"clients\");",
+                  "    pm.expect(d.clients).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Generated QA client is not present\", function () {",
+                  "    const d = pm.response.json();",
+                  "    const qa = pm.collectionVariables.get(\"qaClient\");",
+                  "    pm.expect(d.clients.some(c => c.name === qa)).to.eql(false);",
+                  "});",
+                  "pm.test(\"Client entries have names and numeric progress\", function () {",
+                  "    const d = pm.response.json();",
+                  "    d.clients.forEach(c => {",
+                  "        pm.expect(c.name).to.be.a(\"string\");",
+                  "        pm.expect(c.progress_percent).to.be.a(\"number\");",
+                  "        pm.expect(c.progress_percent).to.be.within(0, 100);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "01 — Create standard onboarding",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/onboarding"
+          },
+          "description": "Creates the three default OnboardOps tasks for a fresh QA client.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Three standard pending tasks created\", function () {",
+                  "    const tasks = pm.response.json();",
+                  "    pm.expect(tasks).to.be.an(\"array\").with.lengthOf(3);",
+                  "    pm.expect(tasks.map(t => t.title).sort()).to.deep.equal([\"Complete onboarding\", \"Configure integration\", \"Create account\"].sort());",
+                  "    tasks.forEach(t => pm.expect(t.status).to.eql(\"pending\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 — Create overdue task (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client\": \"{{qaClient}}\",\n  \"title\": \"QA_overdue_review\",\n  \"status\": \"pending\",\n  \"due_date\": \"2020-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/tasks"
+          },
+          "description": "Safe synthetic record with a static date in the past.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Created task belongs to QA client and retains due date\", function () {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d.client).to.eql(pm.collectionVariables.get(\"qaClient\"));",
+                  "    pm.expect(d.title).to.eql(\"QA_overdue_review\");",
+                  "    pm.expect(d.status).to.eql(\"pending\");",
+                  "    pm.expect(d.due_date).to.eql(\"2020-01-01\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 — Duplicate task rejected (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client\": \"{{qaClient}}\",\n  \"title\": \"QA_overdue_review\",\n  \"status\": \"pending\",\n  \"due_date\": \"2020-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/tasks"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"Duplicate has expected error message\", function () {",
+                  "    pm.expect(pm.response.json().detail).to.eql(\"Task already exists\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 — Invalid status rejected (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client\": \"{{qaClient}}\",\n  \"title\": \"QA_invalid_status\",\n  \"status\": \"banana\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/tasks"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  "pm.test(\"Validation returns error details\", function () {",
+                  "    pm.expect(pm.response.json().detail).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 — Business logic",
+      "item": [
+        {
+          "name": "05 — List tasks / check isolation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/tasks"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"QA client owns exactly four tasks\", function () {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d.client).to.eql(pm.collectionVariables.get(\"qaClient\"));",
+                  "    pm.expect(d.tasks).to.be.an(\"array\").with.lengthOf(4);",
+                  "    pm.expect(d.tasks.map(t => t.title)).to.include(\"QA_overdue_review\");",
+                  "    pm.expect(d.tasks.map(t => t.title)).to.not.include(\"QA_invalid_status\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 — Progress before completion: 0%",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/progress"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"4 total / 0 completed = 0%\", function () {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d.total_tasks).to.eql(4);",
+                  "    pm.expect(d.completed_tasks).to.eql(0);",
+                  "    pm.expect(d.progress_percent).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 — Overdue pending task appears",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/overdue"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Exactly the pending overdue task appears\", function () {",
+                  "    const tasks = pm.response.json();",
+                  "    pm.expect(tasks).to.be.an(\"array\").with.lengthOf(1);",
+                  "    pm.expect(tasks[0].title).to.eql(\"QA_overdue_review\");",
+                  "    pm.expect(tasks[0].status).to.eql(\"pending\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 — Mark overdue task completed",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/clients/{{qaClient}}/tasks/QA_overdue_review"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Update confirmed\", function () {",
+                  "    pm.expect(pm.response.json().updated).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 — Progress after completion: 25%",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/progress"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"1 of 4 tasks yields 25%\", function () {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d.total_tasks).to.eql(4);",
+                  "    pm.expect(d.completed_tasks).to.eql(1);",
+                  "    pm.expect(d.progress_percent).to.eql(25);",
+                  "    pm.expect(d.progress_percent).to.eql(Number((d.completed_tasks * 100 / d.total_tasks).toFixed(2)));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 — Completed task is not overdue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/overdue"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"No overdue tasks after completion\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\").that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 — Onboarding is idempotent",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/onboarding"
+          },
+          "description": "Repeat onboarding must preserve existing task data, including completed status.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Rerunning onboarding does not add duplicate tasks\", function () {",
+                  "    const tasks = pm.response.json();",
+                  "    pm.expect(tasks).to.be.an(\"array\").with.lengthOf(4);",
+                  "    pm.expect(tasks.filter(t => t.title === \"Create account\")).to.have.lengthOf(1);",
+                  "    pm.expect(tasks.filter(t => t.title === \"Configure integration\")).to.have.lengthOf(1);",
+                  "    pm.expect(tasks.filter(t => t.title === \"Complete onboarding\")).to.have.lengthOf(1);",
+                  "    pm.expect(tasks.find(t => t.title === \"QA_overdue_review\").status).to.eql(\"completed\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 — Update nonexistent task (404)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/clients/{{qaClient}}/tasks/QA_missing_task"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Missing task produces correct error\", function () {",
+                  "    pm.expect(pm.response.json().detail).to.eql(\"Task not found\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 — Cleanup synthetic client",
+      "item": [
+        {
+          "name": "13 — Delete QA overdue task",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/tasks/QA_overdue_review"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deletion confirmed\", function () {",
+                  "    pm.expect(pm.response.json().deleted).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 — Delete QA task again (404)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/tasks/QA_overdue_review"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Second deletion gives not-found\", function () {",
+                  "    pm.expect(pm.response.json().detail).to.eql(\"Task not found\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15 — Delete Create account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/tasks/Create%20account"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deletion confirmed\", function () {",
+                  "    pm.expect(pm.response.json().deleted).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "16 — Delete Configure integration",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/tasks/Configure%20integration"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deletion confirmed\", function () {",
+                  "    pm.expect(pm.response.json().deleted).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "17 — Delete Complete onboarding",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/tasks/Complete%20onboarding"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deletion confirmed\", function () {",
+                  "    pm.expect(pm.response.json().deleted).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18 — Verify QA tasks removed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clients/{{qaClient}}/tasks"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"No QA tasks remain\", function () {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d.client).to.eql(pm.collectionVariables.get(\"qaClient\"));",
+                  "    pm.expect(d.tasks).to.be.an(\"array\").that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "19 — Verify QA client absent from list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clients"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Cleaned QA client is not in client list\", function () {",
+                  "    const names = pm.response.json().clients.map(c => c.name);",
+                  "    pm.expect(names).to.not.include(pm.collectionVariables.get(\"qaClient\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
