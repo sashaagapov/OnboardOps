@@ -87,10 +87,16 @@ def get_operations_summary():
     completed_tasks = connection.execute(
         "SELECT COUNT(*) FROM tasks WHERE status = 'completed'"
     ).fetchone()[0]
+    pending_tasks = connection.execute(
+        "SELECT COUNT(*) FROM tasks WHERE status = 'pending'"
+    ).fetchone()[0]
+    in_progress_tasks = connection.execute(
+        "SELECT COUNT(*) FROM tasks WHERE status = 'in_progress'"
+    ).fetchone()[0]
     overdue_tasks = connection.execute(
         """
     SELECT COUNT(*) FROM tasks
-    WHERE due_date < ? AND status = 'pending'
+    WHERE due_date < ? AND status IN ('pending', 'in_progress')
     """,
         (date.today().isoformat(),),
     ).fetchone()[0]
@@ -98,7 +104,6 @@ def get_operations_summary():
         "SELECT COUNT(DISTINCT client) FROM tasks "
     ).fetchone()[0]
     connection.close()
-    pending_tasks = all_tasks - completed_tasks
     if all_tasks == 0:
         completion_rate = 0.0
     else:
@@ -107,6 +112,7 @@ def get_operations_summary():
         "total_tasks": all_tasks,
         "completed_tasks": completed_tasks,
         "pending_tasks": pending_tasks,
+        "in_progress_tasks": in_progress_tasks,
         "completion_rate": completion_rate,
         "overdue_tasks": overdue_tasks,
         "unique_clients": unique_clients,

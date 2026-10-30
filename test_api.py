@@ -25,6 +25,24 @@ def test_create_task_uses_default_status_and_validates_input(api_client):
     assert api_client.post("/tasks", json={"client": "Acme"}).status_code == 422
 
 
+def test_create_task_accepts_all_supported_statuses(api_client):
+    for title, status in [
+        ("Pending task", "pending"),
+        ("In-progress task", "in_progress"),
+        ("Completed task", "completed"),
+    ]:
+        response = api_client.post(
+            "/tasks", json={"client": "Acme", "title": title, "status": status}
+        )
+        assert response.status_code == 201
+        assert response.json()["status"] == status
+
+    invalid = api_client.post(
+        "/tasks", json={"client": "Acme", "title": "Invalid task", "status": "blocked"}
+    )
+    assert invalid.status_code == 422
+
+
 def test_update_task_returns_success_or_not_found(api_client):
     api_client.post("/tasks", json={"client": "Acme", "title": "Create account"})
 
@@ -43,6 +61,23 @@ def test_update_task_returns_success_or_not_found(api_client):
         api_client.patch("/clients/Acme/tasks/Create account", json={}).status_code
         == 422
     )
+
+
+def test_update_task_supports_all_status_transitions(api_client):
+    api_client.post("/tasks", json={"client": "Acme", "title": "Create account"})
+
+    for status in ["in_progress", "completed", "pending"]:
+        response = api_client.patch(
+            "/clients/Acme/tasks/Create account", json={"status": status}
+        )
+        assert response.status_code == 200
+        task = api_client.get("/clients/Acme/tasks").json()["tasks"][0]
+        assert task["status"] == status
+
+    invalid = api_client.patch(
+        "/clients/Acme/tasks/Create account", json={"status": "blocked"}
+    )
+    assert invalid.status_code == 422
 
 
 def test_delete_task_returns_success_or_not_found(api_client):
@@ -209,6 +244,23 @@ def test_pending_task_is_overdue(api_client):
     assert request.json()[0]["title"] == "Review contracts"
 
 
+def test_in_progress_task_is_overdue(api_client):
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Netflix",
+            "title": "Review contracts",
+            "status": "in_progress",
+            "due_date": "2020-01-01",
+        },
+    )
+
+    response = api_client.get("/clients/Netflix/overdue")
+
+    assert response.status_code == 200
+    assert response.json()[0]["status"] == "in_progress"
+
+
 def test_completed_task_is_not_overdue(api_client):
     created = api_client.post(
         "/tasks",
@@ -258,7 +310,7 @@ def test_correct_summary(api_client):
         json={
             "client": "Acme",
             "title": "Configure integration",
-            "status": "completed",
+            "status": "in_progress",
         },
     )
     api_client.post(
@@ -268,9 +320,10 @@ def test_correct_summary(api_client):
     response = api_client.get("/operations/summary")
     assert response.status_code == 200
     assert response.json()["total_tasks"] == 3
-    assert response.json()["completed_tasks"] == 2
+    assert response.json()["completed_tasks"] == 1
     assert response.json()["pending_tasks"] == 1
-    assert response.json()["completion_rate"] == 66.67
+    assert response.json()["in_progress_tasks"] == 1
+    assert response.json()["completion_rate"] == 33.33
 
 
 def test_empty_operations_summary(api_client):
@@ -279,6 +332,7 @@ def test_empty_operations_summary(api_client):
     assert response.json()["total_tasks"] == 0
     assert response.json()["completed_tasks"] == 0
     assert response.json()["pending_tasks"] == 0
+    assert response.json()["in_progress_tasks"] == 0
     assert response.json()["completion_rate"] == 0.0
     assert response.json()["unique_clients"] == 0
 
@@ -298,7 +352,7 @@ def test_overdue_tasks_summary(api_client):
         json={
             "client": "Acme",
             "title": "Configure integration",
-            "status": "completed",
+            "status": "in_progress",
             "due_date": "2020-01-01",
         },
     )
@@ -312,7 +366,7 @@ def test_overdue_tasks_summary(api_client):
         },
     )
     response = api_client.get("/operations/summary")
-    assert response.json()["overdue_tasks"] == 1
+    assert response.json()["overdue_tasks"] == 2
     assert response.json()["unique_clients"] == 1
 
 

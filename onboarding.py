@@ -50,7 +50,7 @@ def get_overdue_tasks(client_name):
         if task["due_date"] is not None:
             deadline_string = task["due_date"]
             deadline = date.fromisoformat(deadline_string)
-            if deadline < today and task["status"] != "completed":
+            if deadline < today and task["status"] in {"pending", "in_progress"}:
                 overdue_tasks.append(task)
 
     return overdue_tasks

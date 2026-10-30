@@ -20,9 +20,9 @@ OnboardOps is a client-onboarding task manager. Its FastAPI backend stores tasks
 - `POST /clients/{client_name}/onboarding` — create the predefined onboarding tasks for a client.
 - `GET /clients/{client_name}/progress` — return total, completed, and percentage progress.
 - `GET /clients/{client_name}/overdue` — list incomplete tasks whose deadlines have passed.
-- `GET /operations/summary` — return a cross-client operations snapshot: `total_tasks`, `completed_tasks`, `pending_tasks`, `completion_rate`, `overdue_tasks`, and `unique_clients`.
+- `GET /operations/summary` — return a cross-client operations snapshot: `total_tasks`, `completed_tasks`, `pending_tasks`, `in_progress_tasks`, `completion_rate`, `overdue_tasks`, and `unique_clients`.
 
-Task statuses are validated as `pending` or `completed`. A task may include an optional ISO date deadline.
+Task statuses are validated as `pending`, `in_progress`, or `completed`. Completion rate counts only completed tasks. A task may include an optional ISO date deadline; overdue tasks are pending or in-progress tasks whose deadline has passed.
 
 ## Run locally
 

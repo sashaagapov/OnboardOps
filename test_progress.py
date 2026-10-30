@@ -47,7 +47,7 @@ def test_progress_counts_mixed_task_statuses(initialized_database):
         ("Create account", "completed"),
         ("Configure integration", "pending"),
         ("Complete onboarding", "completed"),
-        ("Send welcome email", "pending"),
+        ("Send welcome email", "in_progress"),
     ]:
         add_task("Acme", title, status)
 
