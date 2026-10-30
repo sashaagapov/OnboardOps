@@ -246,3 +246,106 @@ def test_duplicate_task_returns_409(api_client):
     assert first.status_code == 201
     assert second.status_code == 409
     assert second.json()["detail"] == "Task already exists"
+
+
+def test_correct_summary(api_client):
+    api_client.post(
+        "/tasks",
+        json={"client": "Acme", "title": "Create account", "status": "completed"},
+    )
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Acme",
+            "title": "Configure integration",
+            "status": "completed",
+        },
+    )
+    api_client.post(
+        "/tasks",
+        json={"client": "Acme", "title": "Review documents", "status": "pending"},
+    )
+    response = api_client.get("/operations/summary")
+    assert response.status_code == 200
+    assert response.json()["total_tasks"] == 3
+    assert response.json()["completed_tasks"] == 2
+    assert response.json()["pending_tasks"] == 1
+    assert response.json()["completion_rate"] == 66.67
+
+
+def test_empty_operations_summary(api_client):
+    response = api_client.get("/operations/summary")
+    assert response.status_code == 200
+    assert response.json()["total_tasks"] == 0
+    assert response.json()["completed_tasks"] == 0
+    assert response.json()["pending_tasks"] == 0
+    assert response.json()["completion_rate"] == 0.0
+    assert response.json()["unique_clients"] == 0
+
+
+def test_overdue_tasks_summary(api_client):
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Acme",
+            "title": "Create account",
+            "status": "pending",
+            "due_date": "2020-01-01",
+        },
+    )
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Acme",
+            "title": "Configure integration",
+            "status": "completed",
+            "due_date": "2020-01-01",
+        },
+    )
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Acme",
+            "title": "Review documents",
+            "status": "pending",
+            "due_date": "2099-01-01",
+        },
+    )
+    response = api_client.get("/operations/summary")
+    assert response.json()["overdue_tasks"] == 1
+    assert response.json()["unique_clients"] == 1
+
+
+def test_unique_clients_summary(api_client):
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Acme",
+            "title": "Create account",
+            "status": "completed",
+        },
+    )
+
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Acme",
+            "title": "Configure integration",
+            "status": "pending",
+        },
+    )
+
+    api_client.post(
+        "/tasks",
+        json={
+            "client": "Netflix",
+            "title": "Create account",
+            "status": "pending",
+        },
+    )
+
+    response = api_client.get("/operations/summary")
+
+    assert response.status_code == 200
+    assert response.json()["total_tasks"] == 3
+    assert response.json()["unique_clients"] == 2

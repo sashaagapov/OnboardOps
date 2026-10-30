@@ -20,6 +20,7 @@ OnboardOps is a client-onboarding task manager. Its FastAPI backend stores tasks
 - `POST /clients/{client_name}/onboarding` — create the predefined onboarding tasks for a client.
 - `GET /clients/{client_name}/progress` — return total, completed, and percentage progress.
 - `GET /clients/{client_name}/overdue` — list incomplete tasks whose deadlines have passed.
+- `GET /operations/summary` — return a cross-client operations snapshot: `total_tasks`, `completed_tasks`, `pending_tasks`, `completion_rate`, `overdue_tasks`, and `unique_clients`.
 
 Task statuses are validated as `pending` or `completed`. A task may include an optional ISO date deadline.
 
@@ -47,6 +48,12 @@ python -m pytest -q
 ```
 
 The tests use isolated temporary SQLite databases and do not modify your local database.
+
+Operations Summary coverage is included in `test_api.py`. Run that module on its own with:
+
+```powershell
+python -m pytest -q test_api.py
+```
 
 ## API testing with Postman
 

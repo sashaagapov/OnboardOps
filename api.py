@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from schemas import TaskCreate, TaskStatusUpdate
-from storage import get_tasks, save_task, update_status_task, delete_task, get_clients
+from storage import get_tasks, save_task, update_status_task, delete_task, get_clients, get_operations_summary
 from onboarding import show_onboarding, get_onboarding_progress, get_overdue_tasks
 from contextlib import asynccontextmanager
 from database import init_db
@@ -77,3 +77,9 @@ def create_onboarding(client_name: str):
     for task in tasks:
         save_task(task)
     return get_tasks(client_name)
+
+
+@app.get("/operations/summary")
+def get_summary():
+    summary = get_operations_summary()
+    return summary

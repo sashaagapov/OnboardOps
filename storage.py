@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import date
 
 
 def save_task(task):
@@ -10,7 +11,12 @@ def save_task(task):
         VALUES (?, ?, ?,?)
         ON CONFLICT(client, title) DO NOTHING
         """,
-        (task["client"], task["title"], task["status"],task.get("due_date"),)
+        (
+            task["client"],
+            task["title"],
+            task["status"],
+            task.get("due_date"),
+        ),
     )
 
     connection.commit()
@@ -60,13 +66,48 @@ def delete_task(client_name, title):
     connection.close()
     return result.rowcount == 1
 
+
 def get_clients():
     connection = sqlite3.connect("onboardops.db")
 
-    rows = connection.execute("SELECT DISTINCT client FROM tasks ORDER BY client").fetchall()
+    rows = connection.execute(
+        "SELECT DISTINCT client FROM tasks ORDER BY client"
+    ).fetchall()
     clients = []
     for row in rows:
         clients.append(row[0])
 
     connection.close()
     return clients
+
+
+def get_operations_summary():
+    connection = sqlite3.connect("onboardops.db")
+    all_tasks = connection.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
+    completed_tasks = connection.execute(
+        "SELECT COUNT(*) FROM tasks WHERE status = 'completed'"
+    ).fetchone()[0]
+    overdue_tasks = connection.execute(
+        """
+    SELECT COUNT(*) FROM tasks
+    WHERE due_date < ? AND status = 'pending'
+    """,
+        (date.today().isoformat(),),
+    ).fetchone()[0]
+    unique_clients = connection.execute(
+        "SELECT COUNT(DISTINCT client) FROM tasks "
+    ).fetchone()[0]
+    connection.close()
+    pending_tasks = all_tasks - completed_tasks
+    if all_tasks == 0:
+        completion_rate = 0.0
+    else:
+        completion_rate = round(completed_tasks / all_tasks * 100, 2)
+    return {
+        "total_tasks": all_tasks,
+        "completed_tasks": completed_tasks,
+        "pending_tasks": pending_tasks,
+        "completion_rate": completion_rate,
+        "overdue_tasks": overdue_tasks,
+        "unique_clients": unique_clients,
+    }
