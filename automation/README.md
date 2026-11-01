@@ -1,27 +1,29 @@
 # n8n automation
 
-The local n8n workflow **OnboardOps — Daily Operations** is stored in the local
-n8n instance. It retrieves `GET http://127.0.0.1:8000/operations/summary` and
-uses `overdue_tasks > 0` to select a branch. The workflow is inactive; no
-schedule or external notification is enabled.
+`onboardops-daily-operations.json` is a sanitized n8n v2.45.7 export of
+**OnboardOps — Daily Operations**. It contains a Manual Trigger, a daily
+Schedule Trigger at 09:00 in `Europe/Kyiv`, an HTTP request to
+`http://127.0.0.1:8000/operations/summary`, an `overdue_tasks > 0` condition,
+and a Telegram true branch. The workflow is exported inactive and has not been
+published for scheduled execution.
 
-## Restore
+## Import on Windows or macOS
 
-Start the local n8n instance, sign in with the existing local n8n account, and
-open **OnboardOps — Daily Operations** from the workflow list. Its persistent
-state is backed up outside this repository; restore that private backup before
-starting n8n if recovery is needed.
+1. Install/run n8n v2.45.7 (or a compatible v2 release), then sign in locally.
+2. In n8n, choose **Import from File** and select
+   `automation/onboardops-daily-operations.json`.
+3. In the Telegram node, privately create or select your Telegram credential,
+   then enter the intended chat ID and message. These values and all credential
+   bindings were removed from the committed export.
+4. Start the FastAPI backend on the same machine before manually executing the
+   workflow. Review it before activating the schedule.
 
-## Export status
+The workflow uses `127.0.0.1`, so it works unchanged when n8n and FastAPI run
+on the same Mac or Windows machine. For containers or separate hosts, update
+the HTTP Request URL to a reachable backend address.
 
-An importable JSON export is not included in this commit. At checkpoint time,
-the local n8n UI and REST API required an authenticated session, so the workflow
-could not be exported without credentials. No authentication was bypassed and
-no credentials, encryption configuration, or n8n database files are tracked in
-Git.
+## Local backup and unfinished integrations
 
-## Incomplete integrations
-
-- Telegram credentials and bot token are not configured.
-- Google Sheets is not connected.
-- Tableau integration is not implemented.
+Local n8n databases, encryption configuration, credentials, and runtime logs
+are private and are never tracked in Git. Google Sheets integration is not
+implemented. Tableau dashboard work is not completed.

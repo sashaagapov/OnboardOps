@@ -26,7 +26,7 @@ Task statuses are validated as `pending`, `in_progress`, or `completed`. Complet
 
 ## Run locally
 
-From the project directory in PowerShell:
+### Windows (PowerShell)
 
 ```powershell
 python -m venv .venv
@@ -38,6 +38,43 @@ fastapi dev api.py
 SQLite initializes automatically when FastAPI starts. The local database file, `onboardops.db`, is created in the current directory when needed.
 
 Open the interactive API documentation at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+In a second terminal, start the frontend:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+### macOS (Terminal)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+fastapi dev api.py
+```
+
+In a second terminal:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Vite proxies `/api` requests to `http://127.0.0.1:8000`; no platform-specific path configuration is required. Do not copy `.venv`, `node_modules`, or `onboardops.db` between machines.
+
+## Optional demo data
+
+The SQLite database is intentionally local-only. To create disposable sample data after starting the API, use the existing onboarding endpoint with a clearly synthetic client name:
+
+```bash
+curl -X POST http://127.0.0.1:8000/clients/DemoClient/onboarding
+```
+
+This is opt-in, uses no private records, and can be repeated safely because onboarding creation is idempotent. Use the API or UI to delete the demo tasks when finished.
 
 ## Tests
 
