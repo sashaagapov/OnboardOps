@@ -1,30 +1,87 @@
-# OnboardOps
+# OnboardOps — Personal Project
 
-OnboardOps is a client-onboarding task manager. Its FastAPI backend stores tasks in SQLite and provides a REST API for task management, onboarding progress, deadlines, overdue work, and a multi-client overview. A React and TypeScript frontend is available in `frontend/`.
+OnboardOps is an end-to-end personal project built to apply and strengthen technical knowledge through hands-on software development, API integration, workflow automation, and operational reporting.
+
+It models a simulated client-onboarding workflow: tasks can be created and managed for each client, progress and overdue work are visible in a React console, and a local n8n workflow can send an overdue alert and record a daily operations snapshot.
+
+## Architecture
+
+![OnboardOps architecture](docs/architecture.svg)
+
+The backend is the source of truth for tasks and the operations summary. The frontend and n8n consume the same REST API; SQLite remains local to the development environment.
+
+## What is implemented
+
+- React + TypeScript Operations Console for browsing clients, reviewing tasks, creating a client/first task, adding tasks, and updating task status.
+- FastAPI REST API backed by automatically initialized SQLite storage.
+- Three task states: `pending`, `in_progress`, and `completed`.
+- Optional deadlines, overdue-task detection, onboarding progress, and seven cross-client operational metrics.
+- Python test suite using pytest and FastAPI `TestClient` with isolated temporary databases.
+- Postman collection for ordered API checks, validation, duplicate handling, progress, overdue behavior, and cleanup.
+- A local n8n workflow with manual and scheduled triggers, a summary request, an overdue condition, Telegram notification, and a date-based Google Sheets upsert.
+
+## Operations Console
+
+The console is designed around the current operational workflow:
+
+- Seven KPI cards: total, completed, pending, in progress, completion rate, overdue, and client count.
+- Client list with individual completion progress.
+- Per-client task table with due dates, overdue indicators, and status controls.
+- Simple, validated forms for creating a new client with its first task or adding a task to an existing client.
+- Loading, empty, success, validation, duplicate-task, and API-error states.
+
+## Backend and REST API
+
+| Area | Endpoints |
+| --- | --- |
+| Tasks | `POST /tasks`, `PATCH /clients/{client_name}/tasks/{title}`, `DELETE /clients/{client_name}/tasks/{title}` |
+| Clients | `GET /clients`, `GET /clients/{client_name}/tasks` |
+| Onboarding | `POST /clients/{client_name}/onboarding`, `GET /clients/{client_name}/progress`, `GET /clients/{client_name}/overdue` |
+| Reporting | `GET /operations/summary` |
+
+`POST /tasks` returns `201`; duplicate client/title pairs return `409`; missing task updates/deletions return `404`; task status validation returns `422` for unsupported values.
+
+## Automation and reporting
+
+![n8n workflow configuration](docs/automation-workflow.svg)
+
+The committed n8n workflow export is sanitized and intentionally inactive for safe import. The locally published workflow runs daily at 09:00 in `Europe/Kyiv` and also supports manual execution.
+
+- It requests `GET /operations/summary` from the local FastAPI service.
+- The Telegram branch runs when `overdue_tasks > 0`.
+- Google Sheets uses **Append or Update Row**, matching on `date`, so a repeated daily run updates the same date rather than creating a duplicate.
+
+See [automation/README.md](automation/README.md) for import steps, credential rebinding, and local runtime requirements. Telegram credentials, Google OAuth credentials, chat IDs, message content, and spreadsheet identifiers are intentionally excluded from Git.
 
 ## Tech stack
 
-- Python 3
-- FastAPI and Pydantic
-- SQLite
-- pytest with FastAPI `TestClient`
-- React and TypeScript (frontend)
+- Python, FastAPI, Pydantic, SQLite, pytest
+- React, TypeScript, Vite, ESLint
+- Postman
+- n8n 2.45.7 (local automation)
+- Telegram and Google Sheets integrations configured locally in n8n
 
-## Implemented API
+## Testing and validation
 
-- `GET /clients` — list clients with onboarding progress.
-- `GET /clients/{client_name}/tasks` — list a client's tasks.
-- `POST /tasks` — create a task. Returns `201`; a duplicate client/title pair returns `409`.
-- `PATCH /clients/{client_name}/tasks/{title}` — update a task status.
-- `DELETE /clients/{client_name}/tasks/{title}` — delete a task.
-- `POST /clients/{client_name}/onboarding` — create the predefined onboarding tasks for a client.
-- `GET /clients/{client_name}/progress` — return total, completed, and percentage progress.
-- `GET /clients/{client_name}/overdue` — list incomplete tasks whose deadlines have passed.
-- `GET /operations/summary` — return a cross-client operations snapshot: `total_tasks`, `completed_tasks`, `pending_tasks`, `in_progress_tasks`, `completion_rate`, `overdue_tasks`, and `unique_clients`.
+The Python suite currently contains **37 passing tests**. It covers onboarding generation, SQLite operations, duplicate protection, task updates/deletions, status validation, client isolation, progress, deadlines, overdue calculations, operations summary metrics, and FastAPI responses.
 
-Task statuses are validated as `pending`, `in_progress`, or `completed`. Completion rate counts only completed tasks. A task may include an optional ISO date deadline; overdue tasks are pending or in-progress tasks whose deadline has passed.
+```powershell
+python -m pytest -q
+```
+
+Frontend checks:
+
+```powershell
+cd frontend
+npm run lint
+npm run build
+```
+
+The repository also includes [the Postman collection](postman/OnboardOps.postman_collection.json) used for API checks. It uses synthetic `PostmanQA_*` data and cleans it up at the end of a complete run.
 
 ## Run locally
+
+SQLite initializes automatically when FastAPI starts and creates `onboardops.db` in the current directory when necessary. The database is local-only and is not committed.
 
 ### Windows (PowerShell)
 
@@ -35,11 +92,7 @@ python -m pip install -r requirements.txt
 fastapi dev api.py
 ```
 
-SQLite initializes automatically when FastAPI starts. The local database file, `onboardops.db`, is created in the current directory when needed.
-
-Open the interactive API documentation at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
-
-In a second terminal, start the frontend:
+In a second terminal:
 
 ```powershell
 cd frontend
@@ -64,44 +117,24 @@ npm ci
 npm run dev
 ```
 
-Vite proxies `/api` requests to `http://127.0.0.1:8000`; no platform-specific path configuration is required. Do not copy `.venv`, `node_modules`, or `onboardops.db` between machines.
+Open the FastAPI documentation at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). Vite proxies `/api` requests to `http://127.0.0.1:8000`.
 
-## Optional demo data
+### Optional synthetic demo data
 
-The SQLite database is intentionally local-only. To create disposable sample data after starting the API, use the existing onboarding endpoint with a clearly synthetic client name:
+With the API running, create a disposable example client using the existing onboarding contract:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/clients/DemoClient/onboarding
 ```
 
-This is opt-in, uses no private records, and can be repeated safely because onboarding creation is idempotent. Use the API or UI to delete the demo tasks when finished.
+This is idempotent and does not require private data. Delete demo tasks through the API or console when finished.
 
-## Tests
+## Current status and limitations
 
-Run the test suite with:
+The project is a local development implementation for a simulated scenario. It does not include authentication, multi-user access, deployment, cloud database infrastructure, CI/CD, or a completed Tableau dashboard. n8n credentials and runtime data stay local; importing the sanitized workflow requires privately reconnecting Telegram and Google Sheets credentials.
 
-```powershell
-python -m pytest -q
-```
+## Repository metadata
 
-The tests use isolated temporary SQLite databases and do not modify your local database.
+Suggested GitHub description: **Personal project for simulated client onboarding: FastAPI, React, SQLite, n8n automation, Telegram alerts, and Google Sheets reporting.**
 
-Operations Summary coverage is included in `test_api.py`. Run that module on its own with:
-
-```powershell
-python -m pytest -q test_api.py
-```
-
-## API testing with Postman
-
-The importable collection is at [postman/OnboardOps.postman_collection.json](postman/OnboardOps.postman_collection.json). It contains 20 ordered requests and 42 assertions covering client listing, onboarding, task creation and retrieval, status updates, deletion, validation errors, duplicates, progress, overdue tasks, idempotency, and cleanup.
-
-1. Start the API with `fastapi dev api.py`; the collection defaults to `http://127.0.0.1:8000`.
-2. Import `postman/OnboardOps.postman_collection.json` into Postman.
-3. Run the full collection once in its listed order, starting with request `00` and without a data file.
-
-The collection uses the `baseUrl` variable and creates a unique `PostmanQA_*` client in its first pre-request script. It only uses that synthetic client and the final requests remove its tasks, so repeated full runs are safe against a local development database. Do not point the collection at production or real customer data. Python tests remain separate and can be run with `python -m pytest -q`.
-
-## Next directions
-
-Next steps include further frontend development, then evaluation of PostgreSQL, Docker, automation, CI/CD, and deployment.
+Suggested topics: `fastapi`, `react`, `typescript`, `sqlite`, `python`, `n8n`, `automation`, `postman`, `google-sheets`, `telegram`.
