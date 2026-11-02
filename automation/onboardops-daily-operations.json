@@ -1,12 +1,7 @@
 [
   {
-    "updatedAt": "2026-11-01T19:18:30.053Z",
-    "createdAt": "2026-10-30T16:07:40.442Z",
-    "id": "WrjeH4A78P4pwFSK",
     "name": "OnboardOps — Daily Operations",
-    "description": null,
     "active": false,
-    "isArchived": false,
     "nodes": [
       {
         "parameters": {},
@@ -17,7 +12,8 @@
           0
         ],
         "id": "6e1eebfc-3e24-4f4e-80e2-adad91da7a61",
-        "name": "When clicking ‘Execute workflow’"
+        "name": "When clicking ‘Execute workflow’",
+        "credentials": {}
       },
       {
         "parameters": {
@@ -31,7 +27,8 @@
           0
         ],
         "id": "60a0b1f5-c82a-4f8f-ba09-deaa0e80fcbd",
-        "name": "HTTP Request"
+        "name": "HTTP Request",
+        "credentials": {}
       },
       {
         "parameters": {
@@ -65,12 +62,13 @@
           0
         ],
         "id": "6295ff4c-48ac-4013-ad29-68168db78f56",
-        "name": "If"
+        "name": "If",
+        "credentials": {}
       },
       {
         "parameters": {
           "chatId": "__RECONNECT_TELEGRAM_CHAT_ID__",
-          "text": "__RECONNECT_REQUIRED__",
+          "text": "__RECONNECT_TELEGRAM_MESSAGE__",
           "additionalFields": {}
         },
         "type": "n8n-nodes-base.telegram",
@@ -101,7 +99,118 @@
           240
         ],
         "id": "6172fa0f-cdec-4e04-ba77-46376fc789b4",
-        "name": "Schedule Trigger"
+        "name": "Schedule Trigger",
+        "credentials": {}
+      },
+      {
+        "parameters": {
+          "operation": "appendOrUpdate",
+          "documentId": "__RECONNECT_GOOGLE_SHEET_ID__",
+          "sheetName": "__RECONNECT_GOOGLE_SHEET_NAME__",
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "date": "={{ $now.setZone('Europe/Kyiv').toFormat('yyyy-MM-dd') }}",
+              "total_tasks": "={{ $json.total_tasks }}",
+              "completed_tasks": "={{ $json.completed_tasks }}",
+              "pending_tasks": "={{ $json.pending_tasks }}",
+              "in_progress_tasks": "={{ $json.in_progress_tasks }}",
+              "completion_rate": "={{ $json.completion_rate }}",
+              "overdue_tasks": "={{ $json.overdue_tasks }}",
+              "unique_clients": "={{ $json.unique_clients }}"
+            },
+            "matchingColumns": [
+              "date"
+            ],
+            "schema": [
+              {
+                "id": "date",
+                "displayName": "date",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "total_tasks",
+                "displayName": "total_tasks",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "completed_tasks",
+                "displayName": "completed_tasks",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "pending_tasks",
+                "displayName": "pending_tasks",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "in_progress_tasks",
+                "displayName": "in_progress_tasks",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "completion_rate",
+                "displayName": "completion_rate",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "overdue_tasks",
+                "displayName": "overdue_tasks",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "unique_clients",
+                "displayName": "unique_clients",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          352,
+          -224
+        ],
+        "id": "ce2353fd-8b1f-4ba2-9cc3-e67c32c580e2",
+        "name": "Append or update row in sheet",
+        "credentials": {}
       }
     ],
     "connections": {
@@ -121,6 +230,11 @@
           [
             {
               "node": "If",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Append or update row in sheet",
               "type": "main",
               "index": 0
             }
@@ -152,47 +266,7 @@
     },
     "settings": {
       "executionOrder": "v1",
-      "binaryMode": "separate",
-      "timeSavedMode": "fixed",
-      "timezone": "Europe/Kyiv",
-      "callerPolicy": "workflowsFromSameOwner",
-      "availableInMCP": false
-    },
-    "staticData": null,
-    "meta": {
-      "templateCredsSetupCompleted": true
-    },
-    "nodeGroups": [],
-    "pinData": {},
-    "versionId": "51960430-9ef1-4609-b0c8-ac54e38b02e2",
-    "activeVersionId": null,
-    "versionCounter": 21,
-    "triggerCount": 0,
-    "sourceWorkflowId": null,
-    "tags": [],
-    "shared": [
-      {
-        "updatedAt": "2026-10-30T16:07:40.443Z",
-        "createdAt": "2026-10-30T16:07:40.443Z",
-        "role": "workflow:owner",
-        "workflowId": "WrjeH4A78P4pwFSK",
-        "projectId": "doGP0pQRaIy2bkcG",
-        "project": {
-          "updatedAt": "2026-10-30T16:02:21.649Z",
-          "createdAt": "2026-10-30T15:58:52.987Z",
-          "id": "doGP0pQRaIy2bkcG",
-          "name": "Sasha Agapov <sasha20070315@gmail.com>",
-          "type": "personal",
-          "icon": null,
-          "description": null,
-          "customTelemetryTags": [],
-          "creatorId": "71c4d609-6b45-47f9-9b61-faea39a6565b"
-        }
-      }
-    ],
-    "versionMetadata": {
-      "name": null,
-      "description": null
+      "timezone": "Europe/Kyiv"
     }
   }
 ]
