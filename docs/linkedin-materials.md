@@ -23,8 +23,12 @@ Built a simulated client-onboarding system using FastAPI, SQLite, React, and Typ
 
 ## Visual order for a LinkedIn post
 
-1. Authentic Operations Console screenshot using synthetic data.
-2. `docs/architecture.svg` to explain the frontend, API, database, and automation flow.
-3. `docs/automation-workflow.svg` to show triggers, summary request, condition, Telegram branch, and Google Sheets upsert.
+All five PNGs are square (1200 × 1200 px) and share the Operations Console's restrained navy, blue, green, and amber palette. Editable SVG sources are retained alongside the assets. The console image is an authentic capture from the running React app using synthetic records created through the real API.
+
+1. [Cover](linkedin/01-cover.png) — the personal-project context and implemented stack. [Editable SVG](linkedin/01-cover.svg).
+2. [Operations Console](linkedin/02-console.png) — real UI with seven KPI cards, client progress, task statuses, deadlines, and `Demo:` data. [Editable SVG](linkedin/02-console.svg); [unframed capture](operations-console.png).
+3. [Architecture](linkedin/03-architecture.png) — interactive application flow and n8n's independent call to the same API. [Editable SVG](architecture.svg).
+4. [Automation](linkedin/04-automation.png) — manual/daily triggers, summary request, and parallel Telegram and Google Sheets branches. [Editable SVG](automation-workflow.svg).
+5. [Task Lifecycle & KPI Logic](linkedin/05-metrics.png) — a typical status progression, the seven KPI relationships, and no invented results. The arrows do not restrict API status changes. [Editable SVG](operational-metrics.svg).
 
 Do not include the sanitized workflow JSON itself, private local database files, Google Sheets screenshots containing account data, or Telegram configuration.

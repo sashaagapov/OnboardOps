@@ -1,38 +1,90 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title description">
-  <title id="title">OnboardOps architecture</title>
-  <desc id="description">React Operations Console communicates with a FastAPI REST API and SQLite. FastAPI summary data is used by n8n automation, which sends Telegram alerts and writes daily Google Sheets snapshots.</desc>
-  <defs>
-    <style>
-      .bg { fill: #f7f8fa; } .card { fill: #ffffff; stroke: #d7dde5; stroke-width: 2; }
-      .title { font: 700 25px system-ui, sans-serif; fill: #16263d; } .sub { font: 500 16px system-ui, sans-serif; fill: #596579; }
-      .label { font: 700 14px system-ui, sans-serif; fill: #1d3f67; letter-spacing: 1px; } .body { font: 500 16px system-ui, sans-serif; fill: #2d3748; }
-      .arrow { stroke: #5b7fa7; stroke-width: 3; fill: none; marker-end: url(#arrow); } .dashed { stroke-dasharray: 7 7; }
-    </style>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5b7fa7"/></marker>
-  </defs>
-  <rect class="bg" width="1200" height="560" rx="18"/>
-  <text class="title" x="60" y="64">OnboardOps — system architecture</text>
-  <text class="sub" x="60" y="94">Local development flow for the simulated client-onboarding scenario</text>
-  <rect class="card" x="60" y="175" width="220" height="145" rx="14"/>
-  <text class="label" x="86" y="215">REACT + TYPESCRIPT</text>
-  <text class="body" x="86" y="252">Operations Console</text>
-  <text class="sub" x="86" y="280">Clients, tasks, KPIs</text>
-  <rect class="card" x="390" y="175" width="220" height="145" rx="14"/>
-  <text class="label" x="416" y="215">FASTAPI</text>
-  <text class="body" x="416" y="252">REST API</text>
-  <text class="sub" x="416" y="280">Validation &amp; operations summary</text>
-  <rect class="card" x="720" y="175" width="220" height="145" rx="14"/>
-  <text class="label" x="746" y="215">SQLITE</text>
-  <text class="body" x="746" y="252">Task storage</text>
-  <text class="sub" x="746" y="280">Local, auto-initialized</text>
-  <path class="arrow" d="M280 230 H390"/><path class="arrow" d="M390 270 H280"/>
-  <path class="arrow" d="M610 230 H720"/><path class="arrow" d="M720 270 H610"/>
-  <rect class="card" x="390" y="395" width="220" height="105" rx="14"/>
-  <text class="label" x="416" y="433">N8N</text><text class="body" x="416" y="465">Daily workflow automation</text>
-  <rect class="card" x="745" y="380" width="180" height="80" rx="14"/>
-  <text class="label" x="770" y="415">TELEGRAM</text><text class="sub" x="770" y="440">Overdue alert</text>
-  <rect class="card" x="975" y="380" width="180" height="80" rx="14"/>
-  <text class="label" x="1000" y="415">GOOGLE SHEETS</text><text class="sub" x="1000" y="440">Daily upsert</text>
-  <path class="arrow dashed" d="M500 320 V395"/><path class="arrow" d="M610 447 H745"/><path class="arrow" d="M610 447 H975"/>
-  <text class="sub" x="626" y="365">GET /operations/summary</text>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="svgtitle svgdesc"><title id="svgtitle">How OnboardOps works</title><desc id="svgdesc">Interactive React client and n8n independently consume the same FastAPI REST API. FastAPI persists tasks in SQLite and calculates the operations summary.</desc>
+<defs><style>
+ text{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+ .eyebrow{font-size:16px;font-weight:750;letter-spacing:2.4px;fill:#1e3a5f}
+ .title{font-size:52px;font-weight:760;letter-spacing:-2px;fill:#111827}
+ .subtitle{font-size:22px;font-weight:440;fill:#586579}
+ .section{font-size:17px;font-weight:760;letter-spacing:2px;fill:#1e3a5f}
+ .card-title{font-size:27px;font-weight:740;letter-spacing:-.5px;fill:#111827}
+ .body{font-size:20px;font-weight:450;fill:#374151}
+ .small{font-size:17px;font-weight:480;fill:#586579}
+ .tiny{font-size:15px;font-weight:600;fill:#586579}
+ .foot{font-size:16px;font-weight:650;fill:#586579;letter-spacing:1px}
+ .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;font-weight:650;fill:#1e3a5f}
+ .big{font-size:36px;font-weight:770;letter-spacing:-1px;fill:#111827}
+ .line{stroke:#7289a5;stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+ .blue-line{stroke:#1d6fa8;stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+ .green-line{stroke:#16854b;stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+ </style>
+ <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 Z" fill="#7289a5"/></marker>
+ <marker id="blue-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 Z" fill="#1d6fa8"/></marker>
+ <marker id="green-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 Z" fill="#16854b"/></marker>
+ </defs>
+<rect width="1200" height="1200" fill="#f5f7fa"/>
+<text class="eyebrow" x="64" y="76">SYSTEM MAP</text>
+<text class="title" x="64" y="139">How OnboardOps works</text>
+<text class="subtitle" x="64" y="181">One local REST API serves the console and the daily automation.</text>
+<path d="M64 209 H1136" stroke="#dbe2ea" stroke-width="2"/>
+<rect x="64" y="242" width="1072" height="406" rx="22" fill="#ffffff" stroke="#dbe2ea" stroke-width="2"/>
+<text class="section" x="96" y="285">01  INTERACTIVE APPLICATION</text>
+<text class="tiny" x="1098" y="285" text-anchor="end">LOCAL DEVELOPMENT</text>
+<rect x="94" y="332" width="178" height="205" rx="22" fill="#ffffff" stroke="#dbe2ea" stroke-width="2"/>
+<rect x="94" y="332" width="178" height="8" rx="4" fill="#e9f0f7" stroke="#e9f0f7" stroke-width="0"/>
+<text class="eyebrow" x="116" y="378">USER</text>
+<text class="card-title" x="116" y="420">Actions</text>
+<text class="small" x="116" y="458">Create tasks</text>
+<text class="small" x="116" y="485">Update status</text>
+<rect x="310" y="332" width="220" height="205" rx="22" fill="#ffffff" stroke="#dbe2ea" stroke-width="2"/>
+<rect x="310" y="332" width="220" height="8" rx="4" fill="#eaf4fb" stroke="#eaf4fb" stroke-width="0"/>
+<text class="eyebrow" x="332" y="378">REACT + TS</text>
+<text class="card-title" x="332" y="420">React console</text>
+<text class="small" x="332" y="458">Clients · tasks</text>
+<text class="small" x="332" y="485">Seven KPI cards</text>
+<rect x="580" y="332" width="250" height="205" rx="22" fill="#ffffff" stroke="#dbe2ea" stroke-width="2"/>
+<rect x="580" y="332" width="250" height="8" rx="4" fill="#eef3f8" stroke="#eef3f8" stroke-width="0"/>
+<text class="eyebrow" x="602" y="378">FASTAPI</text>
+<text class="card-title" x="602" y="420">REST API</text>
+<text class="small" x="602" y="458">Validates requests</text>
+<text class="small" x="602" y="485">Calculates metrics</text>
+<rect x="880" y="332" width="226" height="205" rx="22" fill="#ffffff" stroke="#dbe2ea" stroke-width="2"/>
+<rect x="880" y="332" width="226" height="8" rx="4" fill="#f0f4f8" stroke="#f0f4f8" stroke-width="0"/>
+<text class="eyebrow" x="902" y="378">SQLITE</text>
+<text class="card-title" x="902" y="420">Task storage</text>
+<text class="small" x="902" y="458">Client · status</text>
+<text class="small" x="902" y="485">Optional due date</text>
+<path class="line" d="M272 434 H307" marker-end="url(#arrow)"/>
+<path class="blue-line" d="M530 405 H576" marker-end="url(#blue-arrow)"/>
+<path class="line" d="M580 463 H534" marker-end="url(#arrow)"/>
+<path class="blue-line" d="M830 405 H876" marker-end="url(#blue-arrow)"/>
+<path class="line" d="M880 463 H834" marker-end="url(#arrow)"/>
+<text class="body" x="96" y="591">REST requests →   validation + business logic →   SQLite persistence</text>
+<text class="small" x="96" y="619">JSON responses return to React; the backend computes progress and the seven KPIs.</text>
+<rect x="64" y="680" width="1072" height="418" rx="22" fill="#ffffff" stroke="#dbe2ea" stroke-width="2"/>
+<text class="section" x="96" y="725">02  DAILY AUTOMATION</text>
+<text class="tiny" x="1098" y="725" text-anchor="end">SAME FASTAPI ENDPOINT</text>
+<rect x="94" y="792" width="252" height="215" rx="22" fill="#f8fbff" stroke="#c7d8e7" stroke-width="2"/>
+<rect x="442" y="792" width="267" height="215" rx="22" fill="#ffffff" stroke="#dbe2ea" stroke-width="2"/>
+<rect x="802" y="785" width="304" height="106" rx="22" fill="#f5fbf7" stroke="#bddfc9" stroke-width="2"/>
+<rect x="802" y="908" width="304" height="106" rx="22" fill="#f8fbff" stroke="#c7d8e7" stroke-width="2"/>
+<text class="eyebrow" x="119" y="831">FASTAPI</text>
+<text class="card-title" x="119" y="871">Summary API</text>
+<text class="mono" x="119" y="910">/operations/summary</text>
+<text class="small" x="119" y="945">Seven metrics from SQLite</text>
+<text class="eyebrow" x="468" y="831">N8N</text>
+<text class="card-title" x="468" y="871">Daily workflow</text>
+<text class="small" x="468" y="910">Manual or 09:00 trigger</text>
+<text class="small" x="468" y="944">Requests API summary</text>
+<text class="eyebrow" x="827" y="825">TELEGRAM</text>
+<text class="body" x="827" y="865">Alert if overdue &gt; 0</text>
+<text class="eyebrow" x="827" y="947">GOOGLE SHEETS</text>
+<text class="body" x="827" y="985">Upsert daily row by date</text>
+<path class="line" d="M442 853 H351" marker-end="url(#arrow)"/>
+<path class="blue-line" d="M346 954 H437" marker-end="url(#blue-arrow)"/>
+<text class="tiny" x="394" y="833" text-anchor="middle">GET</text>
+<text class="tiny" x="394" y="985" text-anchor="middle">JSON</text>
+<path class="line" d="M709 899 H756 V838 H797" marker-end="url(#arrow)"/>
+<path class="line" d="M756 899 V961 H797" marker-end="url(#arrow)"/>
+<path d="M64 1130 H1136" stroke="#dbe2ea" stroke-width="2"/>
+<text class="foot" x="64" y="1165">ONBOARDOPS  /  PERSONAL ENGINEERING PROJECT</text>
+<text class="foot" x="1136" y="1165" text-anchor="end">ARCHITECTURE</text>
 </svg>
