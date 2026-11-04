@@ -119,5 +119,3 @@ For disposable demo tasks, run `curl -X POST http://127.0.0.1:8000/clients/DemoC
 ## Status and limitations
 
 This is a local development implementation for a simulated scenario. It does not include authentication, multi-user access, deployment, cloud database infrastructure, CI/CD, or a completed Tableau dashboard. n8n credentials and runtime data remain local; the sanitized export requires private credential rebinding before use.
-
-The [five-image LinkedIn package](docs/linkedin-materials.md) uses the same technical diagrams and authentic console capture.
