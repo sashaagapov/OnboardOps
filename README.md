@@ -1,8 +1,10 @@
 # OnboardOps — Personal Project
 
-OnboardOps is a personal project built to apply and reinforce technical knowledge through a simulated client-onboarding workflow. It connects a React operations console, a FastAPI REST API, local SQLite storage, and an n8n workflow for daily reporting.
+OnboardOps is a personal project built to apply and reinforce technical knowledge through a simulated client-onboarding workflow. It combines a React operations console, a FastAPI REST API, local SQLite storage, and a designed n8n workflow for daily reporting.
 
-Tasks can be created and updated for each client. The application shows task status, deadlines, onboarding progress, and seven operational metrics. The automation reads the same API summary to conditionally send a Telegram alert and record a date-based Google Sheets snapshot.
+Tasks can be created and updated for each client. The application shows task status, deadlines, onboarding progress, and seven operational metrics. The included n8n workflow is designed to read the API summary, conditionally send a Telegram alert, and record a daily Google Sheets snapshot. Its live integrations have not been executed.
+
+[Operations console](#operations-console) · [Automation](#automation-and-reporting) · [API](#rest-api-overview) · [Validation](#testing-and-validation) · [Run locally](#run-locally)
 
 ## Operations Console
 
@@ -16,7 +18,7 @@ The React and TypeScript console provides client and task views, status controls
 
 ![OnboardOps architecture](docs/architecture.svg)
 
-React sends REST requests to FastAPI. The backend validates inputs, reads and writes task records in SQLite, and calculates client progress and operational metrics. n8n independently calls `GET /operations/summary`; FastAPI does not push reports into n8n. SQLite is local to the development environment.
+React sends REST requests to FastAPI. The backend validates inputs, reads and writes task records in SQLite, and calculates client progress and operational metrics. The n8n workflow is configured to call `GET /operations/summary` independently; FastAPI does not push reports into n8n. SQLite is local to the development environment.
 
 The implementation uses Python, FastAPI, Pydantic, SQLite, React, TypeScript, Vite, and n8n. Tests use pytest and FastAPI `TestClient`; a Postman collection covers the API workflow.
 
@@ -47,7 +49,7 @@ See [automation setup](automation/README.md) for local requirements and private 
 
 ## REST API overview
 
-[View the API map](docs/api-map.svg) for the FastAPI routes and their actual consumers. React uses the client, task, progress, overdue, and summary endpoints; n8n calls only `GET /operations/summary`.
+[View the API map](docs/api-map.svg) for the FastAPI routes and their consumers. React uses the client, task, progress, overdue, and summary endpoints; the n8n configuration calls only `GET /operations/summary`.
 
 | Area | Endpoints |
 | --- | --- |
